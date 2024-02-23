@@ -1,13 +1,32 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# BACK Red Social
 
-# Backend en nest
+Prueba técnica para INLAZE. Objetivo Desarrollar una aplicación de red social que permita a los usuarios registrarse, iniciar sesión, publicar mensajes, ver el muro, buscar mensajes, gestionar su perfil y realizar acciones adicionales.
+
+## Comandos para levantar el proyecto de manera local
 
 Levantar base de datos en mongodb
+Copiar el archivo `.env.template` y reenombrarlo a `.env`
+
+1. Instalar las dependencias
+
+```
+npm install
+```
+
+2. Bajar la imagen de mongoDB requerida para el proyecto
+
+```
+docker pull mongo:5.0.16
+```
+
+3. Levantar la base de datos con docker
 
 ```
 docker compose  up -d
 ```
 
-copiar el `.env.tempalte` y renombrarlo a `.env`
+4. Levantar el proyecto en desarrollo
+
+```
+npm run dev
+```
