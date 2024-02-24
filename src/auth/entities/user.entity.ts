@@ -1,4 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
+import { Post } from 'src/post/entities/post.entity';
 
 @Schema()
 export class User {
@@ -16,8 +18,11 @@ export class User {
   @Prop({ required: true, minlength: 6 })
   password?: string;
 
-  @Prop({ type: [String] })
-  posts: string[];
+  @Prop({ type: [{ type: Types.ObjectId, ref: Post.name }] })
+  posts: Types.Array<Post>;
+
+  @Prop({ required: true })
+  idImageRandom: number;
 
   @Prop({ default: Date.now() })
   createdAt: Date;

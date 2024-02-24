@@ -2,10 +2,11 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Post,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 
 import * as bcrypt from 'bcryptjs';
@@ -15,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { User } from './entities/user.entity';
 import { JwtPayload } from './interfaces/jwt-payload';
 import { LoginResponse } from './interfaces/login-response';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -48,8 +50,9 @@ export class AuthService {
 
       //Creamos el usuario y encriptamos la contraseña
       const newUser = new this.userModel({
-        password: bcrypt.hashSync(password, 10),
+        password: this.encryptPassword(password),
         birthDate: new Date(birthDate),
+        idImageRandom: Math.floor(Math.random() * 70) + 1,
         ...userData,
       });
 
@@ -63,25 +66,46 @@ export class AuthService {
         token: this.getJWToken({ id: user._id }),
       };
     } catch (error) {
-      if (error.code === 11000)
-        throw new BadRequestException(
-          `El correo '${createUserDto.email}' ya existe`,
-        );
+      this.handleExceptions(error, createUserDto.email);
+    }
+  }
 
-      throw new InternalServerErrorException(
-        'Ha ocurrido un error en el servidor',
-      );
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.findUserById(id);
+
+    if (updateUserDto.password) {
+      updateUserDto.password = this.encryptPassword(updateUserDto.password);
+    }
+
+    const updatedAt = new Date();
+    try {
+      await user.updateOne({ ...updateUserDto, updatedAt }, { new: true });
+      return { ...user.toJSON(), ...updateUserDto, updatedAt };
+    } catch (error) {
+      this.handleExceptions(error, updateUserDto.email);
     }
   }
 
   async findUserById(id: string) {
-    const user = await this.userModel.findById(id);
+    if (!isValidObjectId(id))
+      throw new BadRequestException(`El id no es válido`);
 
-    //Retornamos los datos del usuario por id. Sin contraseña
-    const { password, ...rest } = user.toJSON();
-    return rest;
+    //Retornamos los datos del usuario por id.
+    return await this.userModel.findById(id);
   }
 
+  private handleExceptions(error: any, email: string) {
+    if (error.code === 11000)
+      throw new BadRequestException(`El correo '${email}' ya existe`);
+
+    throw new InternalServerErrorException(
+      'Ha ocurrido un error en el servidor',
+    );
+  }
+
+  encryptPassword(password: string) {
+    return bcrypt.hashSync(password, 10);
+  }
   //Devolvemos el token según el payload
   getJWToken(payload: JwtPayload) {
     const token = this.jwtService.sign(payload);
